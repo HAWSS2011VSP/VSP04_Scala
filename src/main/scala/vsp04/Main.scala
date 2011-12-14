@@ -20,21 +20,26 @@ object Main {
       val sender = MulticastSender(address, port, frameLength, slots, interface)
       val sink = new DataSink
       sink.start
+      sender.start
 
-      val firstFrame = getFirstFrame(receiver)
+      val delay = 1000 - (System.currentTimeMillis % 1000)
+      Thread.sleep(delay)
+      
+      val firstFrame = getFirstFrame(receiver, slots)
       sink ! firstFrame
-      val initialSlot = firstFrame.freeSlots(Random.nextInt(firstFrame.freeSlots.length))
+      val freeSlots = firstFrame.freeSlots(slots)
+      val initialSlot = freeSlots(Random.nextInt(freeSlots.length))
       println("Initial slot is " + initialSlot + ".")
       sender.slot = initialSlot
       sender ! "foo"
       sender ! "bar"
-      sender.start
       startDataSource(sender, stationNr)
       while (true) {
         val frame = receiver.receiveFrame
         sink ! frame
         if (frame.collisionOnSlot(sender.slot.toByte) && !sender.reserved) {
-          sender.slot = frame.freeSlots(Random.nextInt(frame.freeSlots.length))
+          val freeSlots = frame.freeSlots(slots)
+          sender.slot = freeSlots(Random.nextInt(freeSlots.length))
           println("Collision detected!")
         } else if (!sender.reserved) {
           sender.reserved = true
@@ -44,21 +49,22 @@ object Main {
     }
   }
 
-  def startDataSource(sender: Actor, stationNr: Int) {
-    val timer = new Timer
-    timer.scheduleAtFixedRate(new TimerTask {
-      def run {
-        sender ! "team 22-" + stationNr
+  def startDataSource(senderActor: Actor, stationNr: Int) {
+    import Actor._
+    actor {
+      while(true) {
+        senderActor ! "team 22-" + stationNr
+        Thread.sleep(1000)
       }
-    }, 0, 1000)
+    }.start
   }
 
-  def getFirstFrame(receiver: MulticastReceiver): Frame = {
+  def getFirstFrame(receiver: MulticastReceiver, slots: Int): Frame = {
     val frame = receiver.receiveFrame
-    if (frame.freeSlots.length > 0) {
+    if (frame.freeSlots(slots).length > 0) {
       frame
     } else {
-      getFirstFrame(receiver)
+      getFirstFrame(receiver, slots)
     }
   }
 }

@@ -10,9 +10,10 @@ class Slot(val msg: String, val slot: Byte, val timestamp: Long, val receivedAt:
 
 object Slot {
   def apply(data: Array[Byte], receivedSlot: Byte) = {
-    new Slot((new String(data.slice(0, 23)).trim),
+    new Slot((new String(data.slice(0, 24)).trim),
       data(24),
       LongOps.fromBytes(data.slice(25, 33).reverse),
-      System.currentTimeMillis)
+      System.currentTimeMillis,
+      receivedSlot)
   }
 }

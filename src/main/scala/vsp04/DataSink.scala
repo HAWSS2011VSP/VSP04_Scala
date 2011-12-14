@@ -7,10 +7,10 @@ class DataSink extends Actor {
     loop {
       receive {
         case frame: Frame => {
-          frame.slots.foreach {
-            case Some(slot) =>
-              println(slot.msg + "(" + slot.timestamp + ", next slot: " + slot.slot + ") at " + slot.receivedAt)
-            case _ =>
+          frame.slots.foreach { slot =>
+              println(slot.msg + "(" + slot.timestamp + ", next slot: "
+                + slot.slot + ") at " + slot.receivedAt + " on slot "
+                + slot.receivedSlot)
           }
         }
         case _ =>
